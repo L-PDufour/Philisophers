@@ -38,6 +38,7 @@ et X par le numéro du philosophe.
     message annonçant sa mort.
 • Encore une fois, les philosophes doivent éviter de mourir.
 # memset
+<<<<<<< HEAD
 ```
 #include <string.h>
 void *memset(void *dest, int c, size_t count);
