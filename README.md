@@ -38,13 +38,56 @@ et X par le numéro du philosophe.
     message annonçant sa mort.
 • Encore une fois, les philosophes doivent éviter de mourir.
 # memset
-<<<<<<< HEAD
 ```
 #include <string.h>
 void *memset(void *dest, int c, size_t count);
+```
+Description
 
+The memset() function sets the first count bytes of dest to the value c. The value of c is converted to an unsigned character.
+Return Value
+
+The memset() function returns a pointer to dest.
+Example
+This example sets 10 bytes of the buffer to A and the next 10 bytes to B. 
+```
+#include <string.h>
+#include <stdio.h>
+ 
+#define  BUF_SIZE  20
+ 
+int main(void)
+{
+   char buffer[BUF_SIZE + 1];
+   char *string;
+ 
+   memset(buffer, 0, sizeof(buffer));
+   string = (char *) memset(buffer,'A', 10);
+   printf("\nBuffer contents: %s\n", string);
+   memset(buffer+10, 'B', 10);
+   printf("\nBuffer contents: %s\n", buffer);
+}
+ 
+/*******************  Output should be similar to:  ***************
+ 
+Buffer contents: AAAAAAAAAA
+ 
+Buffer contents: AAAAAAAAAABBBBBBBBBB
+*/
 ```
 # usleep
+```
+int usleep(useconds_t useconds);
+```
+DESCRIPTION         
+       The usleep() function suspends execution of the calling thread
+       for (at least) usec microseconds.  The sleep may be lengthened
+       slightly by any system activity or by the time spent processing
+       the call or by the granularity of system timers.
+
+RETURN VALUE       
+       The usleep() function returns 0 on success.  On error, -1 is
+       returned, with errno set to indicate the error.
 
 # gettimeofday
 
