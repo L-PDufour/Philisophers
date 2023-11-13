@@ -50,6 +50,7 @@ Return Value
 The memset() function returns a pointer to dest.
 Example
 This example sets 10 bytes of the buffer to A and the next 10 bytes to B. 
+<<<<<<< HEAD
 ```
 #include <string.h>
 #include <stdio.h>
@@ -74,7 +75,33 @@ Buffer contents: AAAAAAAAAA
  
 Buffer contents: AAAAAAAAAABBBBBBBBBB
 */
+=======
+>>>>>>> 4a6e53a55aec315269b616c16f3d34a68072a550
 ```
+#include <string.h>
+#include <stdio.h>
+ 
+#define  BUF_SIZE  20
+ 
+int main(void)
+{
+   char buffer[BUF_SIZE + 1];
+   char *string;
+ 
+   memset(buffer, 0, sizeof(buffer));
+   string = (char *) memset(buffer,'A', 10);
+   printf("\nBuffer contents: %s\n", string);
+   memset(buffer+10, 'B', 10);
+   printf("\nBuffer contents: %s\n", buffer);
+}
+ 
+/*******************  Output should be similar to:  ***************
+ 
+Buffer contents: AAAAAAAAAA
+ 
+Buffer contents: AAAAAAAAAABBBBBBBBBB
+*/
+
 # usleep
 ```
 int usleep(useconds_t useconds);
@@ -90,6 +117,20 @@ RETURN VALUE
        returned, with errno set to indicate the error.
 
 # gettimeofday
+```
+#include <sys/time.h>
+
+int gettimeofday(struct timeval *tv, struct timezone *tz);
+```
+Description
+
+The functions gettimeofday() and settimeofday() can get and set the time as well as a timezone. The tv argument is a struct timeval (as specified in <sys/time.h>):
+```
+    struct timeval {
+        time_t      tv_sec;     /* seconds */
+        suseconds_t tv_usec;    /* microseconds */
+    };
+```
 
 # pthread_create
 
