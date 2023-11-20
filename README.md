@@ -134,7 +134,6 @@ The functions gettimeofday() and settimeofday() can get and set the time as well
 
 # pthread_create
 
-
 # pthread_detach
 
 # pthread_join
