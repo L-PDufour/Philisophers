@@ -146,9 +146,9 @@ void	mutex_init(t_prg *prg)
 //
 //  cowboy = *(t_cowboy *)data;
 
-void	program_init(t_prg *prg, int argc, char **argv)
+void	thread_init(t_prg *prg, int argc, char **argv)
 {
-	int i;
+	int	i;
 
 	i = 0;
 	prg = init_struct();
@@ -156,18 +156,60 @@ void	program_init(t_prg *prg, int argc, char **argv)
 	malloc_forks(prg);
 	malloc_thread(prg);
 	mutex_init(prg);
+}
+
+/*
+*	void philo_is_eating(t_prg *prg)
+*	{
+*		if (prg->philo[i])
+*			if (prg->fork[i] == unlock && prg->fork[i + 1] == unlock)
+*				prg->fork[i] == lock
+*				prg->fork[i + 1] == lock
+*				printf (i is eating)
+*				usleep(time_to_eat)
+*				prg->fork[i] == unlock
+*				prg->fork[i + 1] == unlock
+*			philo[i + 1] must sleep time_to_sleep
+*			if fork lock than think and wait
+*			check if philo is not dead (time_before_last_meal)
+*			if (nbr_of_meals) check if nbr of meals == 0 (nbr_of_meals--)
+*			check if philo can eat (fork lock) else think and wait
+*			if eated then check for sleep
+
+
+}
+*
+*/
+
+void	*dispatch(void *arg)
+{
+	t_prg	prg;
+
+	prg = *(t_prg *)arg;
+	return (NULL);
+}
+
+void	thread_create(t_prg *prg)
+{
+	int	i;
+
+	i = 0;
 	while (i < prg->nb_of_philo)
 	{
-		// pthread_create(&prg->philo[i], NULL, serve_drink, NULL);
+		pthread_create(&prg->philo[i], NULL, dispatch, NULL);
 		i++;
 	}
+}
+void	thread_join(t_prg *prg)
+{
+	int	i;
+
 	i = 0;
 	while (i < prg->nb_of_philo)
 	{
 		pthread_join(prg->philo[i], NULL);
 		i++;
 	}
-	mutex_destroy(prg);
 }
 
 int	main(int argc, char **argv)
@@ -179,12 +221,14 @@ int	main(int argc, char **argv)
 	prg = NULL;
 	if (argc == 5 || argc == 6)
 	{
-		program_init(prg, argc, argv);
+		thread_init(prg, argc, argv);
 		// printf("%i\n", prg->nb_of_philo);
 		// while (1)
 		// 	printf("timepstamp in %lli\n", timeInMilliseconds());
 		// pthread_mutex_destroy(&mutex);
 		// printf("Total drinks served: %d\\n", g_drinks_served);
+		thread_join(prg);
+		mutex_destroy(prg);
 	}
 	else
 		exit_prg_at_error("Invalid arguments");
