@@ -6,15 +6,13 @@
 /*   By: ldufour <marvin@42.fr>                     +#+  +:+       +#+        */
 /*                                                +#+#+#+#+#+   +#+           */
 /*   Created: 2023/11/20 08:30:18 by ldufour           #+#    #+#             */
-/*   Updated: 2023/11/20 13:05:00 by ldufour          ###   ########.fr       */
+/*   Updated: 2023/11/20 15:31:41 by ldufour          ###   ########.fr       */
 /*                                                                            */
 /* ************************************************************************** */
 
 #include "../include/philo.h"
-#include <malloc/_malloc.h>
+#include <limits.h>
 #include <pthread.h>
-#include <stdio.h>
-#include <sys/_pthread/_pthread_t.h>
 
 void	exit_prg_at_error(char *str)
 {
@@ -44,19 +42,23 @@ int	ft_isdigit(int c)
 long	ft_atol(const char *str)
 {
 	long	result;
+	int		i;
 
+	i = 0;
 	result = 0;
 	if (!str || ft_strlen(str) == 0 || ft_strlen(str) > 10)
 		exit_prg_at_error("Invalid numbers");
-	while (*str == 32 || (*str >= 9 && *str <= 13))
-		str++;
-	if (*str == 45)
-		exit_prg_at_error("Invalid numbers");
-	while (ft_isdigit(*str))
+	while (str[i] == 32 || (str[i] >= 9 && str[i] <= 13))
+		i++;
+	while (str[i] != '\0')
 	{
+		if (!ft_isdigit(str[i]))
+			exit_prg_at_error("Invalid numbers");
 		result = (result * 10) + (*str - '0');
-		str++;
+		i++;
 	}
+	if (result > INT_MAX)
+		exit_prg_at_error("Invalid numbers");
 	return (result);
 }
 
@@ -91,15 +93,9 @@ t_prg	*init_struct(void)
 
 void	malloc_forks(t_prg *prg)
 {
-	// int	i;
-	// i = 0;
-	// while (i < prg->nb_of_philo)
-	// {
 	prg->fork = malloc(sizeof(pthread_mutex_t) * prg->nb_of_philo);
 	if (!prg->fork)
 		exit_prg_at_error("Malloc failure");
-	// i++;
-	// }
 }
 
 long long	timeInMilliseconds(void)
@@ -116,49 +112,79 @@ long long	timeInMilliseconds(void)
 
 void	malloc_thread(t_prg *prg)
 {
-	// int	i;
-	//
-	// i = 0;
-	// while (i < prg->nb_of_philo)
-	// {
 	prg->philo = malloc(sizeof(pthread_t) * prg->nb_of_philo);
 	if (!prg->philo)
 		exit_prg_at_error("Malloc failure");
-	// i++;
-	// }
 }
 
-void	ft_philosophers(void)
+void	mutex_destroy(t_prg *prg)
 {
-	printf("test\n");
+	int	i;
+
+	i = 0;
+	while (i < prg->nb_of_philo)
+	{
+		pthread_mutex_destroy(&prg->fork[i]);
+		i++;
+	}
 }
-// Ajouter un statut pour proteger les forks
+void	mutex_init(t_prg *prg)
+{
+	int	i;
+
+	i = 0;
+	while (i < prg->nb_of_philo)
+	{
+		pthread_mutex_init(&prg->fork[i], NULL);
+		i++;
+	}
+}
+
+// void *action(void *data)
+// {
+//  t_cowboy cowboy;
+//
+//  cowboy = *(t_cowboy *)data;
+
+void	program_init(t_prg *prg, int argc, char **argv)
+{
+	int i;
+
+	i = 0;
+	prg = init_struct();
+	parsing_arguments(prg, argc, argv);
+	malloc_forks(prg);
+	malloc_thread(prg);
+	mutex_init(prg);
+	while (i < prg->nb_of_philo)
+	{
+		// pthread_create(&prg->philo[i], NULL, serve_drink, NULL);
+		i++;
+	}
+	i = 0;
+	while (i < prg->nb_of_philo)
+	{
+		pthread_join(prg->philo[i], NULL);
+		i++;
+	}
+	mutex_destroy(prg);
+}
+
 int	main(int argc, char **argv)
 {
 	t_prg	*prg;
 	int		i;
 
 	i = 0;
+	prg = NULL;
 	if (argc == 5 || argc == 6)
 	{
-		prg = init_struct();
-		parsing_arguments(prg, argc, argv);
-		malloc_forks(prg);
-		malloc_thread(prg);
-		while (i < prg->nb_of_philo)
-		{
-			pthread_create(&prg->philo[i], NULL, (void *)&ft_philosophers, NULL);
-			i++;
-		}
-		i = 0;
-		while (i < prg->nb_of_philo)
-		{
-			pthread_join(prg->philo[i], NULL);
-			i++;
-		}
-		printf("%i\n", prg->nb_of_philo);
+		program_init(prg, argc, argv);
+		// printf("%i\n", prg->nb_of_philo);
 		// while (1)
 		// 	printf("timepstamp in %lli\n", timeInMilliseconds());
+		// pthread_mutex_destroy(&mutex);
+		// printf("Total drinks served: %d\\n", g_drinks_served);
 	}
 	else
 		exit_prg_at_error("Invalid arguments");
