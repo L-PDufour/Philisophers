@@ -11,68 +11,6 @@
 /* ************************************************************************** */
 
 #include "../include/philo.h"
-#include <limits.h>
-#include <pthread.h>
-
-void	exit_prg_at_error(char *str)
-{
-	printf("Error\n");
-	if (str)
-		printf("%s\n", str);
-	exit(EXIT_FAILURE);
-}
-
-size_t	ft_strlen(const char *s)
-{
-	size_t	i;
-
-	if (!s)
-		return (0);
-	i = 0;
-	while (s[i])
-		i++;
-	return (i);
-}
-
-int	ft_isdigit(int c)
-{
-	return (c >= '0' && c <= '9');
-}
-
-long	ft_atol(const char *str)
-{
-	long	result;
-	int		i;
-
-	i = 0;
-	result = 0;
-	if (!str || ft_strlen(str) == 0 || ft_strlen(str) > 10)
-		exit_prg_at_error("Invalid numbers");
-	while (str[i] == 32 || (str[i] >= 9 && str[i] <= 13))
-		i++;
-	while (str[i] != '\0')
-	{
-		if (!ft_isdigit(str[i]))
-			exit_prg_at_error("Invalid numbers");
-		result = (result * 10) + (*str - '0');
-		i++;
-	}
-	if (result > INT_MAX)
-		exit_prg_at_error("Invalid numbers");
-	return (result);
-}
-
-void	parsing_arguments(t_prg *philo, int argc, char **argv)
-{
-	philo->nb_of_philo = ft_atol(argv[1]);
-	if (philo->nb_of_philo == 0)
-		exit_prg_at_error("Need one philosophers");
-	philo->time_to_die = ft_atol(argv[2]);
-	philo->time_to_eat = ft_atol(argv[3]);
-	philo->time_to_sleep = ft_atol(argv[4]);
-	if (argc == 6)
-		philo->nb_of_meals = ft_atol(argv[5]);
-}
 
 t_prg	*init_struct(void)
 {
@@ -91,13 +29,6 @@ t_prg	*init_struct(void)
 	return (prg);
 }
 
-void	malloc_forks(t_prg *prg)
-{
-	prg->fork = malloc(sizeof(pthread_mutex_t) * prg->nb_of_philo);
-	if (!prg->fork)
-		exit_prg_at_error("Malloc failure");
-}
-
 long long	timeInMilliseconds(void)
 {
 	static struct timeval	start = {0, 0};
@@ -110,13 +41,6 @@ long long	timeInMilliseconds(void)
 		- (((long long)start.tv_sec) * 1000 + (start.tv_usec / 1000));
 }
 
-void	malloc_thread(t_prg *prg)
-{
-	prg->philo = malloc(sizeof(pthread_t) * prg->nb_of_philo);
-	if (!prg->philo)
-		exit_prg_at_error("Malloc failure");
-}
-
 void	mutex_destroy(t_prg *prg)
 {
 	int	i;
@@ -124,10 +48,11 @@ void	mutex_destroy(t_prg *prg)
 	i = 0;
 	while (i < prg->nb_of_philo)
 	{
-		pthread_mutex_destroy(&prg->fork[i]);
+		pthread_mutex_destroy(&prg->philosophers->r_fork);
 		i++;
 	}
 }
+
 void	mutex_init(t_prg *prg)
 {
 	int	i;
@@ -135,7 +60,7 @@ void	mutex_init(t_prg *prg)
 	i = 0;
 	while (i < prg->nb_of_philo)
 	{
-		pthread_mutex_init(&prg->fork[i], NULL);
+		pthread_mutex_init(&prg->philosophers->r_fork, NULL);
 		i++;
 	}
 }
@@ -153,8 +78,8 @@ void	thread_init(t_prg *prg, int argc, char **argv)
 	i = 0;
 	prg = init_struct();
 	parsing_arguments(prg, argc, argv);
-	malloc_forks(prg);
-	malloc_thread(prg);
+	prg->philosophers->l_fork = safe_malloc(sizeof(pthread_mutex_t));
+	prg->threads = safe_malloc(sizeof(pthread_t) * prg->nb_of_philo);
 	mutex_init(prg);
 }
 
@@ -196,7 +121,7 @@ void	thread_create(t_prg *prg)
 	i = 0;
 	while (i < prg->nb_of_philo)
 	{
-		pthread_create(&prg->philo[i], NULL, dispatch, NULL);
+		pthread_create(&prg->threads[i], NULL, dispatch, NULL);
 		i++;
 	}
 }
@@ -207,7 +132,7 @@ void	thread_join(t_prg *prg)
 	i = 0;
 	while (i < prg->nb_of_philo)
 	{
-		pthread_join(prg->philo[i], NULL);
+		pthread_join(prg->threads[i], NULL);
 		i++;
 	}
 }
