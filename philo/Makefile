@@ -6,7 +6,7 @@
 #    By: ldufour <marvin@42.fr>                     +#+  +:+       +#+         #
 #                                                 +#+#+#+#+#+   +#+            #
 #    Created: 2023/11/20 08:01:55 by ldufour           #+#    #+#              #
-#    Updated: 2023/11/23 08:22:34 by ldufour          ###   ########.fr        #
+#    Updated: 2024/01/15 13:56:53 by ldufour          ###   ########.fr        #
 #                                                                              #
 # **************************************************************************** #
 
@@ -20,11 +20,10 @@ OBJ = $(SRC:.c=.o)
 	
 CC = cc
 
-CFLAGS = -Wall -Wextra -Werror -fsanitize=thread
+CFLAGS = -g
 
 $(NAME): $(OBJ)
 		@$(CC) $(CFLAGS) $(SRC) -o $(NAME)
-
 
 all:	$(NAME)
 

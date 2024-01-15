@@ -6,28 +6,11 @@
 /*   By: ldufour <marvin@42.fr>                     +#+  +:+       +#+        */
 /*                                                +#+#+#+#+#+   +#+           */
 /*   Created: 2023/11/20 08:30:18 by ldufour           #+#    #+#             */
-/*   Updated: 2023/11/20 15:31:41 by ldufour          ###   ########.fr       */
+/*   Updated: 2024/01/15 15:15:05 by ldufour          ###   ########.fr       */
 /*                                                                            */
 /* ************************************************************************** */
 
 #include "../include/philo.h"
-
-t_prg	*init_struct(void)
-{
-	static t_prg	*prg;
-
-	prg = NULL;
-	if (!prg)
-	{
-		prg = (t_prg *)malloc(sizeof(t_prg));
-		if (!prg)
-		{
-			printf("Malloc failure\n");
-			exit(EXIT_FAILURE);
-		}
-	}
-	return (prg);
-}
 
 long long	timeInMilliseconds(void)
 {
@@ -65,41 +48,57 @@ void	mutex_init(t_prg *prg)
 	}
 }
 
-// void *action(void *data)
-// {
-//  t_cowboy cowboy;
-//
-//  cowboy = *(t_cowboy *)data;
-
-void	thread_init(t_prg *prg, int argc, char **argv)
+t_prg	*init_struct(int argc, char **argv)
 {
-	int	i;
+	static t_prg	*prg;
+	int				i;
 
 	i = 0;
-	prg = init_struct();
+	prg = NULL;
+	if (!prg)
+		prg = (t_prg *)safe_malloc(sizeof(t_prg));
 	parsing_arguments(prg, argc, argv);
-	prg->philosophers->l_fork = safe_malloc(sizeof(pthread_mutex_t));
-	prg->threads = safe_malloc(sizeof(pthread_t) * prg->nb_of_philo);
-	mutex_init(prg);
+	prg->philosophers = (t_philosophers *)safe_malloc(prg->nb_of_philo
+			* prg->nb_of_philo * sizeof(t_philosophers));
+	while (i < prg->nb_of_philo)
+	{
+		if (i == prg->nb_of_philo)
+			prg->philosophers[i].l_fork = &prg->philosophers[0].r_fork;
+		else
+			prg->philosophers[i].l_fork = &prg->philosophers[i + 1].r_fork;
+		i++;
+	}
+	return (prg);
+}
+
+t_prg	*program_init(int argc, char **argv)
+{
+	int		i;
+	t_prg	*prg;
+
+	i = 0;
+	prg = init_struct(argc, argv);
+	// prg->philosophers->l_fork = safe_malloc(sizeof(pthread_mutex_t));
+	// mutex_init(prg);
+	return (prg);
 }
 
 /*
 *	void philo_is_eating(t_prg *prg)
 *	{
 *		if (prg->philo[i])
-*			if (prg->fork[i] == unlock && prg->fork[i + 1] == unlock)
-*				prg->fork[i] == lock
-*				prg->fork[i + 1] == lock
-*				printf (i is eating)
+*			if (prg->fork[i] == unlock && prg->fork[i + 1] ==
+unlock) *				prg->fork[i] == lock *
+prg->fork[i + 1] == lock *				printf (i is eating)
 *				usleep(time_to_eat)
 *				prg->fork[i] == unlock
 *				prg->fork[i + 1] == unlock
 *			philo[i + 1] must sleep time_to_sleep
 *			if fork lock than think and wait
 *			check if philo is not dead (time_before_last_meal)
-*			if (nbr_of_meals) check if nbr of meals == 0 (nbr_of_meals--)
-*			check if philo can eat (fork lock) else think and wait
-*			if eated then check for sleep
+*			if (nbr_of_meals) check if nbr of meals == 0
+(nbr_of_meals--) *			check if philo can eat (fork lock) else
+think and wait *			if eated then check for sleep
 
 
 }
@@ -114,28 +113,24 @@ void	*dispatch(void *arg)
 	return (NULL);
 }
 
-void	thread_create(t_prg *prg)
-{
-	int	i;
-
-	i = 0;
-	while (i < prg->nb_of_philo)
-	{
-		pthread_create(&prg->threads[i], NULL, dispatch, NULL);
-		i++;
-	}
-}
-void	thread_join(t_prg *prg)
-{
-	int	i;
-
-	i = 0;
-	while (i < prg->nb_of_philo)
-	{
-		pthread_join(prg->threads[i], NULL);
-		i++;
-	}
-}
+// void thread_create(t_prg *prg) {
+//   int i;
+//
+//   i = 0;
+//   while (i < prg->nb_of_philo) {
+//     pthread_create(&prg->threads[i], NULL, dispatch, NULL);
+//     i++;
+//   }
+// }
+// void thread_join(t_prg *prg) {
+//   int i;
+//
+//   i = 0;
+//   while (i < prg->nb_of_philo) {
+//     pthread_join(prg->threads[i], NULL);
+//     i++;
+//   }
+// }
 
 int	main(int argc, char **argv)
 {
@@ -146,16 +141,19 @@ int	main(int argc, char **argv)
 	prg = NULL;
 	if (argc == 5 || argc == 6)
 	{
-		thread_init(prg, argc, argv);
-		// printf("%i\n", prg->nb_of_philo);
-		// while (1)
-		// 	printf("timepstamp in %lli\n", timeInMilliseconds());
-		// pthread_mutex_destroy(&mutex);
-		// printf("Total drinks served: %d\\n", g_drinks_served);
-		thread_join(prg);
-		mutex_destroy(prg);
+		prg = program_init(argc, argv);
+		while (i < prg->nb_of_philo)
+		{
+			prg->philosophers[i].state = EAT;
+			i++;
+		}
+		printf("%i\n", prg->nb_of_philo);
+		// thread_join(prg);
+		// mutex_destroy(prg);
 	}
 	else
 		exit_prg_at_error("Invalid arguments");
+	free(prg->philosophers);
+	free(prg);
 	return (0);
 }
