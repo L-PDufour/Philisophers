@@ -6,7 +6,7 @@
 /*   By: ldufour <marvin@42.fr>                     +#+  +:+       +#+        */
 /*                                                +#+#+#+#+#+   +#+           */
 /*   Created: 2023/11/20 08:08:39 by ldufour           #+#    #+#             */
-/*   Updated: 2024/01/15 14:11:12 by ldufour          ###   ########.fr       */
+/*   Updated: 2024/01/16 15:08:29 by ldufour          ###   ########.fr       */
 /*                                                                            */
 /* ************************************************************************** */
 
@@ -28,6 +28,7 @@ typedef enum e_state {
   EAT,
   SLEEP,
   THINK,
+  FORKING,
 } t_state;
 
 typedef struct s_philosophers {
@@ -44,6 +45,7 @@ typedef struct s_prg {
   long time_to_die;
   long time_to_eat;
   long time_to_sleep;
+  pthread_mutex_t print;
   t_philosophers *philosophers;
 } t_prg;
 

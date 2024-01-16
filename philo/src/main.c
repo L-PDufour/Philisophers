@@ -6,11 +6,28 @@
 /*   By: ldufour <marvin@42.fr>                     +#+  +:+       +#+        */
 /*                                                +#+#+#+#+#+   +#+           */
 /*   Created: 2023/11/20 08:30:18 by ldufour           #+#    #+#             */
-/*   Updated: 2024/01/15 15:15:05 by ldufour          ###   ########.fr       */
+/*   Updated: 2024/01/16 15:24:26 by ldufour          ###   ########.fr       */
 /*                                                                            */
 /* ************************************************************************** */
 
 #include "../include/philo.h"
+#include <pthread.h>
+
+void	clean_process(t_prg *prg)
+{
+	int	i;
+
+	i = 0;
+	while (i < prg->nb_of_philo)
+	{
+		pthread_mutex_destroy(&prg->philosophers[i].r_fork);
+		free(prg->philosophers[i].l_fork);
+		free(&prg->philosophers[i]);
+		i++;
+	}
+	pthread_mutex_destroy(&prg->print);
+	free(prg);
+}
 
 long long	timeInMilliseconds(void)
 {
@@ -22,65 +39,6 @@ long long	timeInMilliseconds(void)
 	gettimeofday(&end, NULL);
 	return (((long long)end.tv_sec) * 1000 + (end.tv_usec / 1000))
 		- (((long long)start.tv_sec) * 1000 + (start.tv_usec / 1000));
-}
-
-void	mutex_destroy(t_prg *prg)
-{
-	int	i;
-
-	i = 0;
-	while (i < prg->nb_of_philo)
-	{
-		pthread_mutex_destroy(&prg->philosophers->r_fork);
-		i++;
-	}
-}
-
-void	mutex_init(t_prg *prg)
-{
-	int	i;
-
-	i = 0;
-	while (i < prg->nb_of_philo)
-	{
-		pthread_mutex_init(&prg->philosophers->r_fork, NULL);
-		i++;
-	}
-}
-
-t_prg	*init_struct(int argc, char **argv)
-{
-	static t_prg	*prg;
-	int				i;
-
-	i = 0;
-	prg = NULL;
-	if (!prg)
-		prg = (t_prg *)safe_malloc(sizeof(t_prg));
-	parsing_arguments(prg, argc, argv);
-	prg->philosophers = (t_philosophers *)safe_malloc(prg->nb_of_philo
-			* prg->nb_of_philo * sizeof(t_philosophers));
-	while (i < prg->nb_of_philo)
-	{
-		if (i == prg->nb_of_philo)
-			prg->philosophers[i].l_fork = &prg->philosophers[0].r_fork;
-		else
-			prg->philosophers[i].l_fork = &prg->philosophers[i + 1].r_fork;
-		i++;
-	}
-	return (prg);
-}
-
-t_prg	*program_init(int argc, char **argv)
-{
-	int		i;
-	t_prg	*prg;
-
-	i = 0;
-	prg = init_struct(argc, argv);
-	// prg->philosophers->l_fork = safe_malloc(sizeof(pthread_mutex_t));
-	// mutex_init(prg);
-	return (prg);
 }
 
 /*
@@ -105,32 +63,112 @@ think and wait *			if eated then check for sleep
 *
 */
 
+// • Any state change of a philosopher must be formatted as follows:
+// Replace timestamp_in_ms with the current timestamp in milliseconds
+// and X with the philosopher number.
+
+void	key_logger(t_prg *prg, t_philosophers *philosohers, int number)
+{
+	pthread_mutex_lock(&prg->print);
+	prg->time = timeInMilliseconds();
+	if (philosohers->state == EAT)
+		printf("%li philosopher[%i] is eating\n", prg->time, number);
+	else if (philosohers->state == DIE)
+		printf("%li philosopher[%i] died\n", prg->time, number);
+	else if (philosohers->state == SLEEP)
+		printf("%li philosopher[%i] is sleeping\n", prg->time, number);
+	else if (philosohers->state == FORKING)
+		printf("%li philosopher[%i] has taken a fork\n", prg->time, number);
+	else if (philosohers->state == THINK)
+		printf("%li philosopher[%i] is thinking\n", prg->time, number);
+	else
+		printf("%li philosopher[%i] is testin\n", prg->time, number);
+	pthread_mutex_unlock(&prg->print);
+}
+
 void	*dispatch(void *arg)
 {
-	t_prg	prg;
+	t_prg	*prg;
 
-	prg = *(t_prg *)arg;
+	prg = (t_prg *)arg;
+  int i = 0;
+  key_logger(prg, prg->philosophers, i);
 	return (NULL);
 }
 
-// void thread_create(t_prg *prg) {
-//   int i;
+void	thread_create(t_prg *prg)
+{
+	int	i;
+
+	i = 0;
+	while (i < prg->nb_of_philo)
+	{
+		pthread_create(prg->philosophers[i].threads, NULL, dispatch, NULL);
+		i++;
+	}
+}
+
+// void	thread_join(t_prg *prg)
+// {
+// 	int	i;
 //
-//   i = 0;
-//   while (i < prg->nb_of_philo) {
-//     pthread_create(&prg->threads[i], NULL, dispatch, NULL);
-//     i++;
-//   }
+// 	i = 0;
+// 	while (i < prg->nb_of_philo)
+// 	{
+// 		pthread_join(prg->threads[i], NULL);
+// 		i++;
+// 	}
 // }
-// void thread_join(t_prg *prg) {
-//   int i;
-//
-//   i = 0;
-//   while (i < prg->nb_of_philo) {
-//     pthread_join(prg->threads[i], NULL);
-//     i++;
-//   }
-// }
+
+void	mutex_init(t_prg *prg)
+{
+	int	i;
+
+	i = 0;
+	pthread_mutex_init(&prg->print, NULL);
+	while (i < prg->nb_of_philo)
+	{
+		pthread_mutex_init(&prg->philosophers[i].r_fork, NULL);
+		pthread_mutex_init(prg->philosophers[i].l_fork, NULL);
+		i++;
+	}
+}
+
+t_prg	*init_struct(int argc, char **argv)
+{
+	static t_prg	*prg;
+	int				i;
+
+	i = 0;
+	prg = NULL;
+	if (!prg)
+		prg = (t_prg *)safe_malloc(sizeof(t_prg));
+	parsing_arguments(prg, argc, argv);
+	prg->philosophers = (t_philosophers *)safe_malloc(prg->nb_of_philo
+			* sizeof(t_philosophers));
+	mutex_init(prg);
+	while (i < prg->nb_of_philo)
+	{
+		prg->philosophers[i].l_fork = (pthread_mutex_t *)safe_malloc(sizeof(pthread_mutex_t));
+		if (i == prg->nb_of_philo - 1)
+			prg->philosophers[i].l_fork = &prg->philosophers[0].r_fork;
+		else
+			prg->philosophers[i].l_fork = &prg->philosophers[i + 1].r_fork;
+		i++;
+	}
+	return (prg);
+}
+
+t_prg	*program_init(int argc, char **argv)
+{
+	int		i;
+  //TODO: deplacer ma statique de init_struct ici 
+	t_prg	*prg;
+
+	i = 0;
+	prg = init_struct(argc, argv);
+	return (prg);
+}
 
 int	main(int argc, char **argv)
 {
@@ -142,18 +180,17 @@ int	main(int argc, char **argv)
 	if (argc == 5 || argc == 6)
 	{
 		prg = program_init(argc, argv);
-		while (i < prg->nb_of_philo)
-		{
-			prg->philosophers[i].state = EAT;
-			i++;
-		}
-		printf("%i\n", prg->nb_of_philo);
+		// printf("%i\n", prg->nb_of_philo);
 		// thread_join(prg);
 		// mutex_destroy(prg);
+		while (i < prg->nb_of_philo)
+		{
+			key_logger(prg, &prg->philosophers[i], i);
+			i++;
+		}
 	}
 	else
 		exit_prg_at_error("Invalid arguments");
-	free(prg->philosophers);
-	free(prg);
+	clean_process(prg);
 	return (0);
 }

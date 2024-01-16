@@ -6,7 +6,7 @@
 /*   By: ldufour <marvin@42.fr>                     +#+  +:+       +#+        */
 /*                                                +#+#+#+#+#+   +#+           */
 /*   Created: 2023/11/23 08:01:56 by ldufour           #+#    #+#             */
-/*   Updated: 2023/11/23 08:01:56 by ldufour          ###   ########.fr       */
+/*   Updated: 2024/01/16 08:22:49 by ldufour          ###   ########.fr       */
 /*                                                                            */
 /* ************************************************************************** */
 
@@ -63,5 +63,3 @@ void	parsing_arguments(t_prg *philo, int argc, char **argv)
 	if (argc == 6)
 		philo->nb_of_meals = ft_atol(argv[5]);
 }
-
-
