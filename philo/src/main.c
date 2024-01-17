@@ -6,7 +6,7 @@
 /*   By: ldufour <marvin@42.fr>                     +#+  +:+       +#+        */
 /*                                                +#+#+#+#+#+   +#+           */
 /*   Created: 2023/11/20 08:30:18 by ldufour           #+#    #+#             */
-/*   Updated: 2024/01/16 15:24:26 by ldufour          ###   ########.fr       */
+/*   Updated: 2024/01/17 08:42:27 by ldufour          ###   ########.fr       */
 /*                                                                            */
 /* ************************************************************************** */
 
@@ -89,10 +89,11 @@ void	key_logger(t_prg *prg, t_philosophers *philosohers, int number)
 void	*dispatch(void *arg)
 {
 	t_prg	*prg;
+	int		i;
 
 	prg = (t_prg *)arg;
-  int i = 0;
-  key_logger(prg, prg->philosophers, i);
+	i = 0;
+	key_logger(prg, prg->philosophers, i);
 	return (NULL);
 }
 
@@ -103,7 +104,7 @@ void	thread_create(t_prg *prg)
 	i = 0;
 	while (i < prg->nb_of_philo)
 	{
-		pthread_create(prg->philosophers[i].threads, NULL, dispatch, NULL);
+		pthread_create(prg->philosophers[i].threads, NULL, dispatch, prg);
 		i++;
 	}
 }
@@ -162,9 +163,9 @@ t_prg	*init_struct(int argc, char **argv)
 t_prg	*program_init(int argc, char **argv)
 {
 	int		i;
-  //TODO: deplacer ma statique de init_struct ici 
 	t_prg	*prg;
 
+	// TODO: deplacer ma statique de init_struct ici
 	i = 0;
 	prg = init_struct(argc, argv);
 	return (prg);
