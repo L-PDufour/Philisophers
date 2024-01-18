@@ -6,51 +6,163 @@
 /*   By: ldufour <marvin@42.fr>                     +#+  +:+       +#+        */
 /*                                                +#+#+#+#+#+   +#+           */
 /*   Created: 2023/11/20 08:30:18 by ldufour           #+#    #+#             */
-/*   Updated: 2024/01/17 08:42:27 by ldufour          ###   ########.fr       */
+/*   Updated: 2024/01/18 10:53:13 by ldufour          ###   ########.fr       */
 /*                                                                            */
 /* ************************************************************************** */
 
 #include "../include/philo.h"
 #include <pthread.h>
+#include <unistd.h>
 
-void	clean_process(t_prg *prg)
+void	*dispatch(void *arg);
+void	key_logger(t_data *data, t_state state, int number)
+{
+	pthread_mutex_lock(&data->print);
+	data->time = timeInMilliseconds();
+	if (state == EAT)
+		printf("%li philosopher[%i] is eating\n", data->time, number);
+	else if (state == DIE)
+		printf("%li philosopher[%i] died\n", data->time, number);
+	else if (state == SLEEP)
+		printf("%li philosopher[%i] is sleeping\n", data->time, number);
+	else if (state == FORKING)
+		printf("%li philosopher[%i] has taken a fork\n", data->time, number);
+	else if (state == THINK)
+		printf("%li philosopher[%i] is thinking\n", data->time, number);
+	else
+		printf("%li philosopher[%i] is testin\n", data->time, number);
+	pthread_mutex_unlock(&data->print);
+}
+
+void	dinner_start(t_data *data)
 {
 	int	i;
 
 	i = 0;
-	while (i < prg->nb_of_philo)
+	while (i < data->nb_of_philo)
 	{
-		pthread_mutex_destroy(&prg->philosophers[i].r_fork);
-		free(prg->philosophers[i].l_fork);
-		free(&prg->philosophers[i]);
+		pthread_create(&data->philo->threads, NULL, dispatch, &data);
 		i++;
 	}
-	pthread_mutex_destroy(&prg->print);
-	free(prg);
+	i = 0;
+	while (i < data->nb_of_philo)
+	{
+		pthread_join(data->philo->threads, NULL);
+		i++;
+	}
 }
-
-long long	timeInMilliseconds(void)
+// TODO: Je ne suis pas sur de bien faire ma routine. dispatch & dinner_start
+void	*dispatch(void *arg)
 {
-	static struct timeval	start = {0, 0};
-	struct timeval			end;
+	t_data	*data;
+	int		i;
+	t_state	state;
 
-	if (start.tv_sec == 0 && start.tv_usec == 0)
-		gettimeofday(&start, NULL);
-	gettimeofday(&end, NULL);
-	return (((long long)end.tv_sec) * 1000 + (end.tv_usec / 1000))
-		- (((long long)start.tv_sec) * 1000 + (start.tv_usec / 1000));
+	data = (t_data *)arg;
+	i = 0;
+	// if (i == 0)
+	// {
+	pthread_mutex_lock(&data->philo[0].r_fork);
+	pthread_mutex_lock(data->philo[0].l_fork);
+	key_logger(data, EAT, 0);
+	usleep(data->time_to_eat);
+	pthread_mutex_unlock(&data->philo[0].r_fork);
+	pthread_mutex_unlock(data->philo[0].l_fork);
+	// }
+	key_logger(data, SLEEP, i);
+	return (NULL);
 }
 
+void	clean_process(t_data *data)
+{
+	int	i;
+
+	i = 0;
+	while (i < data->nb_of_philo)
+	{
+		safe_mutex_handle(&data->philo[i].r_fork, DESTROY);
+		i++;
+	}
+	safe_mutex_handle(&data->print, DESTROY);
+	free(data->philo);
+	free(data);
+}
+
+void	philo_init(t_data *data)
+{
+	int		i;
+	t_philo	*philo;
+
+	i = 0;
+	while (i < data->nb_of_philo)
+	{
+		philo = &data->philo[i];
+		philo->full = false;
+		philo->dead = false;
+		safe_mutex_handle(&philo->r_fork, INIT);
+		if (i == data->nb_of_philo - 1)
+			philo->l_fork = &data->philo[0].r_fork;
+		else
+			philo->l_fork = &data->philo[i + 1].r_fork;
+		i++;
+	}
+}
+
+void	struct_setup(t_data *data, int argc, char **argv)
+{
+	parsing_arguments(data, argc, argv);
+	data->philo = (t_philo *)safe_malloc(sizeof(t_philo) * data->nb_of_philo);
+	data->start_thread = false;
+	data->end_time = false;
+	philo_init(data);
+}
+
+t_data	*init_struct(void)
+{
+	static t_data	*data;
+	int				i;
+
+	i = 0;
+	data = NULL;
+	if (!data)
+		data = safe_malloc(sizeof(t_data));
+	return (data);
+}
+
+void	program_init(int argc, char **argv)
+{
+	int		i;
+	t_data	*data;
+
+	i = 0;
+	data = init_struct();
+	struct_setup(data, argc, argv);
+	print_philo_info(data);
+	dinner_start(data);
+	clean_process(data);
+}
+
+int	main(int argc, char **argv)
+{
+	int	i;
+
+	i = 0;
+	if (argc == 5 || argc == 6)
+		program_init(argc, argv);
+	else
+		exit_prg_at_error("Invalid arguments");
+	return (0);
+}
 /*
-*	void philo_is_eating(t_prg *prg)
+*	void philo_is_eating(t_data *data)
 *	{
-*		if (prg->philo[i])
-*			if (prg->fork[i] == unlock && prg->fork[i + 1] ==
-unlock) *				prg->fork[i] == lock *
-prg->fork[i + 1] == lock *				printf (i is eating)
+*		if (data->philo[i])
+*			if (data->fork[i] == unlock && prg->fork[i + 1] ==
+unlock) *				data->fork[i] == lock *
+data->fork[i + 1] == lock *				printf (i is eating)
 *				usleep(time_to_eat)
-*				prg->fork[i] == unlock
-*				prg->fork[i + 1] == unlock
+*				data->fork[i] == unlock
+*				data->fork[i + 1] == unlock
 *			philo[i + 1] must sleep time_to_sleep
 *			if fork lock than think and wait
 *			check if philo is not dead (time_before_last_meal)
@@ -62,136 +174,3 @@ think and wait *			if eated then check for sleep
 }
 *
 */
-
-// • Any state change of a philosopher must be formatted as follows:
-// Replace timestamp_in_ms with the current timestamp in milliseconds
-// and X with the philosopher number.
-
-void	key_logger(t_prg *prg, t_philosophers *philosohers, int number)
-{
-	pthread_mutex_lock(&prg->print);
-	prg->time = timeInMilliseconds();
-	if (philosohers->state == EAT)
-		printf("%li philosopher[%i] is eating\n", prg->time, number);
-	else if (philosohers->state == DIE)
-		printf("%li philosopher[%i] died\n", prg->time, number);
-	else if (philosohers->state == SLEEP)
-		printf("%li philosopher[%i] is sleeping\n", prg->time, number);
-	else if (philosohers->state == FORKING)
-		printf("%li philosopher[%i] has taken a fork\n", prg->time, number);
-	else if (philosohers->state == THINK)
-		printf("%li philosopher[%i] is thinking\n", prg->time, number);
-	else
-		printf("%li philosopher[%i] is testin\n", prg->time, number);
-	pthread_mutex_unlock(&prg->print);
-}
-
-void	*dispatch(void *arg)
-{
-	t_prg	*prg;
-	int		i;
-
-	prg = (t_prg *)arg;
-	i = 0;
-	key_logger(prg, prg->philosophers, i);
-	return (NULL);
-}
-
-void	thread_create(t_prg *prg)
-{
-	int	i;
-
-	i = 0;
-	while (i < prg->nb_of_philo)
-	{
-		pthread_create(prg->philosophers[i].threads, NULL, dispatch, prg);
-		i++;
-	}
-}
-
-// void	thread_join(t_prg *prg)
-// {
-// 	int	i;
-//
-// 	i = 0;
-// 	while (i < prg->nb_of_philo)
-// 	{
-// 		pthread_join(prg->threads[i], NULL);
-// 		i++;
-// 	}
-// }
-
-void	mutex_init(t_prg *prg)
-{
-	int	i;
-
-	i = 0;
-	pthread_mutex_init(&prg->print, NULL);
-	while (i < prg->nb_of_philo)
-	{
-		pthread_mutex_init(&prg->philosophers[i].r_fork, NULL);
-		pthread_mutex_init(prg->philosophers[i].l_fork, NULL);
-		i++;
-	}
-}
-
-t_prg	*init_struct(int argc, char **argv)
-{
-	static t_prg	*prg;
-	int				i;
-
-	i = 0;
-	prg = NULL;
-	if (!prg)
-		prg = (t_prg *)safe_malloc(sizeof(t_prg));
-	parsing_arguments(prg, argc, argv);
-	prg->philosophers = (t_philosophers *)safe_malloc(prg->nb_of_philo
-			* sizeof(t_philosophers));
-	mutex_init(prg);
-	while (i < prg->nb_of_philo)
-	{
-		prg->philosophers[i].l_fork = (pthread_mutex_t *)safe_malloc(sizeof(pthread_mutex_t));
-		if (i == prg->nb_of_philo - 1)
-			prg->philosophers[i].l_fork = &prg->philosophers[0].r_fork;
-		else
-			prg->philosophers[i].l_fork = &prg->philosophers[i + 1].r_fork;
-		i++;
-	}
-	return (prg);
-}
-
-t_prg	*program_init(int argc, char **argv)
-{
-	int		i;
-	t_prg	*prg;
-
-	// TODO: deplacer ma statique de init_struct ici
-	i = 0;
-	prg = init_struct(argc, argv);
-	return (prg);
-}
-
-int	main(int argc, char **argv)
-{
-	t_prg	*prg;
-	int		i;
-
-	i = 0;
-	prg = NULL;
-	if (argc == 5 || argc == 6)
-	{
-		prg = program_init(argc, argv);
-		// printf("%i\n", prg->nb_of_philo);
-		// thread_join(prg);
-		// mutex_destroy(prg);
-		while (i < prg->nb_of_philo)
-		{
-			key_logger(prg, &prg->philosophers[i], i);
-			i++;
-		}
-	}
-	else
-		exit_prg_at_error("Invalid arguments");
-	clean_process(prg);
-	return (0);
-}

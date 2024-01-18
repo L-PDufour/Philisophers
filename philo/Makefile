@@ -6,7 +6,7 @@
 #    By: ldufour <marvin@42.fr>                     +#+  +:+       +#+         #
 #                                                 +#+#+#+#+#+   +#+            #
 #    Created: 2023/11/20 08:01:55 by ldufour           #+#    #+#              #
-#    Updated: 2024/01/15 13:56:53 by ldufour          ###   ########.fr        #
+#    Updated: 2024/01/17 13:58:54 by ldufour          ###   ########.fr        #
 #                                                                              #
 # **************************************************************************** #
 
@@ -14,6 +14,7 @@ NAME = philo
 
 SRC =	src/utils.c \
 		src/parsing.c \
+		src/time.c \
 		src/main.c   
 
 OBJ = $(SRC:.c=.o)
